@@ -1,4 +1,5 @@
 ﻿using ProductCatalog.Application.DTOs.Products;
+using ProductCatalog.Application.Interfaces.Caching;
 using ProductCatalog.Application.Interfaces.Products;
 using ProductCatalog.Domain.Entities;
 
@@ -7,14 +8,30 @@ namespace ProductCatalog.Application.Services.Products;
 public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly ICacheService _cacheService;
 
-    public ProductService(IProductRepository productRepository)
+    public ProductService(
+        IProductRepository productRepository,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<ProductDto?> GetByIdAsync(int id)
     {
+        var key = $"product:{id}";
+
+        var cachedProduct = await _cacheService.GetAsync<ProductDto>(key);
+
+        if (cachedProduct is not null)
+        {
+            Console.WriteLine("✅ Product loaded from Redis");
+            return cachedProduct;
+        }
+
+        Console.WriteLine("🗄️ Product loaded from Database");
+
         var product = await _productRepository.GetByIdAsync(id);
 
         if (product is null)
@@ -22,7 +39,7 @@ public class ProductService : IProductService
             return null;
         }
 
-        return new ProductDto
+        var productDto = new ProductDto
         {
             Id = product.Id,
             Name = product.Name,
@@ -30,6 +47,13 @@ public class ProductService : IProductService
             Description = product.Description,
             Stock = product.Stock
         };
+
+        await _cacheService.SetAsync(
+            key,
+            productDto,
+            TimeSpan.FromMinutes(5));
+
+        return productDto;
     }
 
     public async Task<IReadOnlyList<ProductDto>> GetAllAsync()
