@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ProductCatalog.Application.Common.Responses;
 using ProductCatalog.Application.DTOs.Products;
 using ProductCatalog.Application.Interfaces.Products;
 
@@ -20,7 +21,10 @@ public class ProductsController : ControllerBase
     {
         var products = await _productService.GetAllAsync();
 
-        return Ok(products);
+        return Ok(
+            ApiResponse<IEnumerable<ProductDto>>.Ok(
+                products,
+                "Products retrieved successfully."));
     }
 
     [HttpGet("{id:int}")]
@@ -30,10 +34,14 @@ public class ProductsController : ControllerBase
 
         if (product is null)
         {
-            return NotFound();
+            return NotFound(
+                 ApiResponse<object>.Fail("Product not found."));
         }
 
-        return Ok(product);
+        return Ok(
+       ApiResponse<ProductDto>.Ok(
+           product,
+           "Product retrieved successfully."));
     }
 
     [HttpPost]
@@ -44,7 +52,9 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(
             nameof(GetById),
             new { id = product.Id },
-            product);
+            ApiResponse<ProductDto>.Ok(
+                product,
+                "Product created successfully."));
     }
 
     [HttpPut("{id:int}")]
@@ -56,7 +66,8 @@ public class ProductsController : ControllerBase
 
         if (!updated)
         {
-            return NotFound();
+            return NotFound(
+                ApiResponse<object>.Fail("Product not found."));
         }
 
         return NoContent();
@@ -69,7 +80,8 @@ public class ProductsController : ControllerBase
 
         if (!deleted)
         {
-            return NotFound();
+            return NotFound(
+                ApiResponse<object>.Fail("Product not found."));
         }
 
         return NoContent();
