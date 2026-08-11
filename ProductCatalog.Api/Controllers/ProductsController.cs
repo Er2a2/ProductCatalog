@@ -20,11 +20,9 @@ public class ProductsController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
-    [FromQuery] PaginationRequestDto request)
+       [FromQuery] ProductQueryDto query)
     {
-        var result = await _productService.GetPagedAsync(
-            request.Page,
-            request.PageSize);
+        var result = await _productService.GetPagedAsync(query);
 
         return Ok(
             ApiResponse<PagedResultDto<ProductDto>>.Ok(

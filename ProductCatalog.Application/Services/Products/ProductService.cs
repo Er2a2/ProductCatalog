@@ -165,14 +165,13 @@ public class ProductService : IProductService
     }
 
     public async Task<PagedResultDto<ProductDto>> GetPagedAsync(
-    int page,
-    int pageSize)
+     ProductQueryDto query)
     {
         var (products, totalCount) =
-            await _productRepository.GetPagedAsync(page, pageSize);
+            await _productRepository.GetPagedAsync(query);
 
         var totalPages = (int)Math.Ceiling(
-            totalCount / (double)pageSize);
+            totalCount / (double)query.PageSize);
 
         var items = products.Select(product => new ProductDto
         {
@@ -186,8 +185,8 @@ public class ProductService : IProductService
         return new PagedResultDto<ProductDto>
         {
             Items = items,
-            Page = page,
-            PageSize = pageSize,
+            Page = query.Page,
+            PageSize = query.PageSize,
             TotalCount = totalCount,
             TotalPages = totalPages
         };

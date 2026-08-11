@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ProductCatalog.Application.DTOs.Products;
 using ProductCatalog.Application.Interfaces.Products;
 using ProductCatalog.Domain.Entities;
 
@@ -47,18 +48,41 @@ public class ProductRepository : IProductRepository
     }
 
     public async Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedAsync(
-    int page,
-    int pageSize)
+    ProductQueryDto query)
     {
-        var query = _context.Products
-            .AsNoTracking();
+        var products = _context.Products
+            .AsNoTracking()
+            .AsQueryable();
 
-        var totalCount = await query.CountAsync();
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            products = products.Where(p =>
+                p.Name.Contains(query.Search) ||
+                p.Description.Contains(query.Search));
+        }
 
-        var items = await query
-            .OrderBy(p => p.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        products = query.SortBy?.ToLower() switch
+        {
+            "name" => query.SortOrder?.ToLower() == "desc"
+                ? products.OrderByDescending(p => p.Name)
+                : products.OrderBy(p => p.Name),
+
+            "price" => query.SortOrder?.ToLower() == "desc"
+                ? products.OrderByDescending(p => p.Price)
+                : products.OrderBy(p => p.Price),
+
+            "stock" => query.SortOrder?.ToLower() == "desc"
+                ? products.OrderByDescending(p => p.Stock)
+                : products.OrderBy(p => p.Stock),
+
+            _ => products.OrderBy(p => p.Id)
+        };
+
+        var totalCount = await products.CountAsync();
+
+        var items = await products
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .ToListAsync();
 
         return (items, totalCount);

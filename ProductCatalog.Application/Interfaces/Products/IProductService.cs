@@ -15,7 +15,5 @@ public interface IProductService
 
     Task<bool> DeleteAsync(int id);
 
-    Task<PagedResultDto<ProductDto>> GetPagedAsync(
-    int page,
-    int pageSize);
+    Task<PagedResultDto<ProductDto>> GetPagedAsync(ProductQueryDto query);
 }
