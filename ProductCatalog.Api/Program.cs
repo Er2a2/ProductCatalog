@@ -47,6 +47,15 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 //Register FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
+//Health Checks
+builder.Services
+    .AddHealthChecks()
+    .AddSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")!)
+    .AddRedis(
+        builder.Configuration["Redis:ConnectionString"]!,
+        name: "redis");
+
 var app = builder.Build();
 
 //Register Global Exception Middleware
@@ -61,6 +70,8 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

@@ -1,4 +1,5 @@
 services:
+
   api:
     build:
       context: .
@@ -10,8 +11,10 @@ services:
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ProductCatalogDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;"
       Redis__ConnectionString: "redis:6379"
     depends_on:
-      - sqlserver
-      - redis
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -23,6 +26,16 @@ services:
       - "1550:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong@Passw0rd' -C -Q 'SELECT 1' || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   redis:
     image: redis:latest
@@ -31,6 +44,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   sqlserver_data:
