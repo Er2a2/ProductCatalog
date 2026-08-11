@@ -115,6 +115,8 @@ public class ProductService : IProductService
         _productRepository.Update(product);
         await _productRepository.SaveChangesAsync();
 
+        await _cacheService.RemoveAsync($"product:{id}");
+
         return true;
     }
 
