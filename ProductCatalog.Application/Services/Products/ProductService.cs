@@ -1,4 +1,5 @@
-﻿using ProductCatalog.Application.DTOs.Products;
+﻿using ProductCatalog.Application.DTOs.Common;
+using ProductCatalog.Application.DTOs.Products;
 using ProductCatalog.Application.Interfaces.Caching;
 using ProductCatalog.Application.Interfaces.Products;
 using ProductCatalog.Domain.Entities;
@@ -161,5 +162,34 @@ public class ProductService : IProductService
 
 
         return true;
+    }
+
+    public async Task<PagedResultDto<ProductDto>> GetPagedAsync(
+    int page,
+    int pageSize)
+    {
+        var (products, totalCount) =
+            await _productRepository.GetPagedAsync(page, pageSize);
+
+        var totalPages = (int)Math.Ceiling(
+            totalCount / (double)pageSize);
+
+        var items = products.Select(product => new ProductDto
+        {
+            Id = product.Id,
+            Name = product.Name,
+            Price = product.Price,
+            Description = product.Description,
+            Stock = product.Stock
+        });
+
+        return new PagedResultDto<ProductDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
     }
 }

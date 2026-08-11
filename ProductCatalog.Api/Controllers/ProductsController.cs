@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Azure.Core;
+using Microsoft.AspNetCore.Mvc;
 using ProductCatalog.Application.Common.Responses;
+using ProductCatalog.Application.DTOs.Common;
 using ProductCatalog.Application.DTOs.Products;
 using ProductCatalog.Application.Interfaces.Products;
 
@@ -17,13 +19,16 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<ProductDto>>> GetAll()
+    public async Task<IActionResult> GetAll(
+    [FromQuery] PaginationRequestDto request)
     {
-        var products = await _productService.GetAllAsync();
+        var result = await _productService.GetPagedAsync(
+            request.Page,
+            request.PageSize);
 
         return Ok(
-            ApiResponse<IEnumerable<ProductDto>>.Ok(
-                products,
+            ApiResponse<PagedResultDto<ProductDto>>.Ok(
+                result,
                 "Products retrieved successfully."));
     }
 

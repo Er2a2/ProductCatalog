@@ -1,4 +1,5 @@
-﻿using ProductCatalog.Application.DTOs.Products;
+﻿using ProductCatalog.Application.DTOs.Common;
+using ProductCatalog.Application.DTOs.Products;
 
 namespace ProductCatalog.Application.Interfaces.Products;
 
@@ -13,4 +14,8 @@ public interface IProductService
     Task<bool> UpdateAsync(int id, UpdateProductDto request);
 
     Task<bool> DeleteAsync(int id);
+
+    Task<PagedResultDto<ProductDto>> GetPagedAsync(
+    int page,
+    int pageSize);
 }
