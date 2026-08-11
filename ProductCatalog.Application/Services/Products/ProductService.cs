@@ -3,6 +3,7 @@ using ProductCatalog.Application.DTOs.Products;
 using ProductCatalog.Application.Interfaces.Caching;
 using ProductCatalog.Application.Interfaces.Products;
 using ProductCatalog.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace ProductCatalog.Application.Services.Products;
 
@@ -11,15 +12,18 @@ public class ProductService : IProductService
     private readonly IProductRepository _productRepository;
     private readonly ICacheService _cacheService;
     private readonly ICacheLock _cacheLock;
+    private readonly ILogger<ProductService> _logger;
 
     public ProductService(
         IProductRepository productRepository,
         ICacheService cacheService,
-        ICacheLock cacheLock)
+        ICacheLock cacheLock,
+        ILogger<ProductService> logger)
     {
         _productRepository = productRepository;
         _cacheService = cacheService;
         _cacheLock = cacheLock;
+        _logger = logger;
     }
 
     public async Task<ProductDto?> GetByIdAsync(int id)
@@ -31,7 +35,7 @@ public class ProductService : IProductService
 
         if (cachedProduct is not null)
         {
-            Console.WriteLine("✅ Product loaded from Redis");
+            _logger.LogInformation("Product {ProductId} loaded from Redis", id);
             return cachedProduct;
         }
 
@@ -46,11 +50,15 @@ public class ProductService : IProductService
 
             if (cachedProduct is not null)
             {
-                Console.WriteLine("✅ Product loaded from Redis after waiting");
+                _logger.LogInformation(
+                  "Product {ProductId} loaded from Redis after waiting",
+                  id);
                 return cachedProduct;
             }
 
-            Console.WriteLine($"🗄️ DB request for product {id}");
+            _logger.LogInformation(
+              "Product {ProductId} loaded from database",
+              id);
 
             var product = await _productRepository.GetByIdAsync(id);
 
@@ -188,11 +196,11 @@ public class ProductService : IProductService
 
         if (cachedResult is not null)
         {
-            Console.WriteLine("✅ Product list loaded from Redis");
+            _logger.LogInformation("Product list loaded from Redis");
             return cachedResult;
         }
 
-        Console.WriteLine("🗄️ Product list loaded from Database");
+        _logger.LogInformation("Product list loaded from database");
 
         var (products, totalCount) =
             await _productRepository.GetPagedAsync(query);
