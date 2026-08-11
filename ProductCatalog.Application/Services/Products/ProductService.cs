@@ -9,19 +9,23 @@ public class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly ICacheService _cacheService;
+    private readonly ICacheLock _cacheLock;
 
     public ProductService(
         IProductRepository productRepository,
-        ICacheService cacheService)
+        ICacheService cacheService,
+        ICacheLock cacheLock)
     {
         _productRepository = productRepository;
         _cacheService = cacheService;
+        _cacheLock = cacheLock;
     }
 
     public async Task<ProductDto?> GetByIdAsync(int id)
     {
         var key = $"product:{id}";
 
+        //First Check
         var cachedProduct = await _cacheService.GetAsync<ProductDto>(key);
 
         if (cachedProduct is not null)
@@ -30,30 +34,51 @@ public class ProductService : IProductService
             return cachedProduct;
         }
 
-        Console.WriteLine("🗄️ Product loaded from Database");
+        var cacheLock = _cacheLock.GetLock(key);
 
-        var product = await _productRepository.GetByIdAsync(id);
+        await cacheLock.WaitAsync();
 
-        if (product is null)
+        try
         {
-            return null;
+            // Double-check cache after acquiring lock
+            cachedProduct = await _cacheService.GetAsync<ProductDto>(key);
+
+            if (cachedProduct is not null)
+            {
+                Console.WriteLine("✅ Product loaded from Redis after waiting");
+                return cachedProduct;
+            }
+
+            Console.WriteLine($"🗄️ DB request for product {id}");
+
+            var product = await _productRepository.GetByIdAsync(id);
+
+            if (product is null)
+            {
+                return null;
+            }
+
+            var productDto = new ProductDto
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Description = product.Description,
+                Stock = product.Stock
+            };
+
+            await _cacheService.SetAsync(
+                key,
+                productDto,
+                TimeSpan.FromMinutes(5));
+
+            return productDto;
         }
 
-        var productDto = new ProductDto
+        finally
         {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Description = product.Description,
-            Stock = product.Stock
-        };
-
-        await _cacheService.SetAsync(
-            key,
-            productDto,
-            TimeSpan.FromMinutes(5));
-
-        return productDto;
+            cacheLock.Release();
+        }
     }
 
     public async Task<IReadOnlyList<ProductDto>> GetAllAsync()

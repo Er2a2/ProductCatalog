@@ -28,11 +28,13 @@ var redisConnectionString =
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnectionString!));
 
+//Redis CacheLock
+builder.Services.AddSingleton<ICacheLock ,ProductCacheLock>();
+
 //Register DI
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICacheService, RedisCacheService>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
