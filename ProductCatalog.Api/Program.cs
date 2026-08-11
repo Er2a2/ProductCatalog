@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Api.Filters;
+using ProductCatalog.Api.Middleware;
 using ProductCatalog.Application.Interfaces.Caching;
 using ProductCatalog.Application.Interfaces.Products;
 using ProductCatalog.Application.Services.Products;
@@ -47,6 +48,9 @@ builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateProductValidator>();
 
 var app = builder.Build();
+
+//Register Global Exception Middleware
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
