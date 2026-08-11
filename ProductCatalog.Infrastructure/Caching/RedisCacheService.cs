@@ -49,4 +49,19 @@ public class RedisCacheService : ICacheService
 
         await db.KeyDeleteAsync(key);
     }
+
+    public async Task RemoveByPatternAsync(string pattern)
+    {
+        var server = _redis.GetServer(_redis.GetEndPoints().First());
+
+        var keys = server.Keys(
+            pattern: pattern);
+
+        var db = _redis.GetDatabase();
+
+        foreach (var key in keys)
+        {
+            await db.KeyDeleteAsync(key);
+        }
+    }
 }

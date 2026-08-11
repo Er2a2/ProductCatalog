@@ -10,4 +10,6 @@ public interface ICacheService
         TimeSpan? expiry = null);
 
     Task RemoveAsync(string key);
+
+    Task RemoveByPatternAsync(string pattern);
 }

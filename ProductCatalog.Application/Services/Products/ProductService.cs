@@ -113,6 +113,8 @@ public class ProductService : IProductService
         await _productRepository.AddAsync(product);
         await _productRepository.SaveChangesAsync();
 
+        await _cacheService.RemoveByPatternAsync("products:*");
+
         return new ProductDto
         {
             Id = product.Id,
@@ -142,6 +144,7 @@ public class ProductService : IProductService
         await _productRepository.SaveChangesAsync();
 
         await _cacheService.RemoveAsync($"product:{id}");
+        await _cacheService.RemoveByPatternAsync("products:*");
 
         return true;
     }
@@ -159,14 +162,38 @@ public class ProductService : IProductService
         await _productRepository.SaveChangesAsync();
 
         await _cacheService.RemoveAsync($"product:{id}");
+        await _cacheService.RemoveByPatternAsync("products:*");
 
 
         return true;
     }
 
-    public async Task<PagedResultDto<ProductDto>> GetPagedAsync(
-     ProductQueryDto query)
+    private static string BuildProductListCacheKey(ProductQueryDto query)
     {
+        return $"products:" +
+               $"page={query.Page}:" +
+               $"size={query.PageSize}:" +
+               $"search={query.Search?.Trim().ToLowerInvariant()}:" +
+               $"sort={query.SortBy?.Trim().ToLowerInvariant()}:" +
+               $"order={query.SortOrder?.Trim().ToLowerInvariant()}";
+    }
+
+    public async Task<PagedResultDto<ProductDto>> GetPagedAsync(
+    ProductQueryDto query)
+    {
+        var cacheKey = BuildProductListCacheKey(query);
+
+        var cachedResult =
+            await _cacheService.GetAsync<PagedResultDto<ProductDto>>(cacheKey);
+
+        if (cachedResult is not null)
+        {
+            Console.WriteLine("✅ Product list loaded from Redis");
+            return cachedResult;
+        }
+
+        Console.WriteLine("🗄️ Product list loaded from Database");
+
         var (products, totalCount) =
             await _productRepository.GetPagedAsync(query);
 
@@ -182,7 +209,7 @@ public class ProductService : IProductService
             Stock = product.Stock
         });
 
-        return new PagedResultDto<ProductDto>
+        var result = new PagedResultDto<ProductDto>
         {
             Items = items,
             Page = query.Page,
@@ -190,5 +217,12 @@ public class ProductService : IProductService
             TotalCount = totalCount,
             TotalPages = totalPages
         };
+
+        await _cacheService.SetAsync(
+            cacheKey,
+            result,
+            TimeSpan.FromMinutes(5));
+
+        return result;
     }
 }
