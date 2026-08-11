@@ -1,0 +1,16 @@
+﻿using ProductCatalog.Application.DTOs.Products;
+
+namespace ProductCatalog.Application.Interfaces.Products;
+
+public interface IProductService
+{
+    Task<ProductDto?> GetByIdAsync(int id);
+
+    Task<IReadOnlyList<ProductDto>> GetAllAsync();
+
+    Task<ProductDto> CreateAsync(CreateProductDto request);
+
+    Task<bool> UpdateAsync(int id, CreateProductDto request);
+
+    Task<bool> DeleteAsync(int id);
+}
