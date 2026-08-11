@@ -73,7 +73,7 @@ public class ProductService : IProductService
         };
     }
 
-    public async Task<bool> UpdateAsync(int id, CreateProductDto request)
+    public async Task<bool> UpdateAsync(int id, UpdateProductDto request)
     {
         var product = await _productRepository.GetByIdAsync(id);
 
