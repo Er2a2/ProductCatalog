@@ -132,6 +132,9 @@ public class ProductService : IProductService
         _productRepository.Delete(product);
         await _productRepository.SaveChangesAsync();
 
+        await _cacheService.RemoveAsync($"product:{id}");
+
+
         return true;
     }
 }
